@@ -1,0 +1,22 @@
+cmake_minimum_required(VERSION 3.16)
+project(smart_guide_cane LANGUAGES CXX)
+
+add_library(guide_cane firmware/GuideCane/src/control.cpp firmware/GuideCane/src/lidar.cpp)
+target_include_directories(guide_cane PUBLIC firmware/GuideCane/src)
+target_compile_features(guide_cane PUBLIC cxx_std_17)
+set_target_properties(guide_cane PROPERTIES CXX_EXTENSIONS OFF)
+if(MSVC)
+    add_compile_options(/W4 /permissive-)
+    target_compile_options(guide_cane PRIVATE /W4 /permissive-)
+else()
+    add_compile_options(-Wall -Wextra -Wpedantic)
+    target_compile_options(guide_cane PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+add_executable(cane_demo tools/demo.cpp)
+target_link_libraries(cane_demo PRIVATE guide_cane)
+
+enable_testing()
+add_executable(cane_tests tests/test_cane.cpp)
+target_link_libraries(cane_tests PRIVATE guide_cane)
+add_test(NAME cane_tests COMMAND cane_tests)

@@ -1,0 +1,7 @@
+/build/
+/.pio/
+/.vs/
+/out/
+*.bin
+*.elf
+*.map

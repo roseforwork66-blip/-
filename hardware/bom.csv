@@ -1,0 +1,20 @@
+Part,Quantity,Prototype specification,Check before purchase
+ESP32-S3 DevKit,1,ESP32-S3 Dev Module compatible,GPIO 4 through 16 available on headers
+RPLIDAR A1M8,1,A1M8-R6 or compatible standard SCAN at 115200 baud,Original module documentation and adapter for exact revision
+Steering servo,1,DS3218 180-degree with metal horn as trial part,Confirm supply voltage; measure current and torque under load
+AS5600 module plus magnet,1,12-bit angle feedback with a diametrically magnetized magnet,3.3 V logic and accessible I2C address 0x36
+ICM-42688-P module,1,3.3 V I2C breakout board,Known address strap and pull-up wiring
+Quadrature encoders,2,Two channels each with logic-compatible outputs,Mechanical fit and four-edge counts per meter
+Wheels,2,Approx 150 mm diameter and 25 to 35 mm width,Bearings and independent axle hardware
+Wheel frame and upper bracket,1 set,Metal workpiece and fasteners,Wheel clearance and provision for brake attachments
+Steering shaft and bearings,1 set,Supported vertical pivot with mechanical end stops,Shaft diameter and rated thrust for assembly
+Cane tubes and pitch hinge,1 set,Telescoping tube with pitch-only joint and locking fasteners,Grip height and joint range
+Brake lever and cable splitter,1 set,Mechanical lever with separate cable branches,Lever and pad travel compatibility
+Brake fixtures,2,Wheel-compatible pads and anchors,Mechanical engagement and release at both steering extremes
+Protected battery and charger,1 set,Commercial protected 3S pack with matched charger,Pack ratings and connector polarity
+Logic buck converter,1,Nominal 5 V with load margin,Scope rail while lidar starts and servo stalls briefly on bench
+Servo buck converter,1,Servo-rated voltage and peak load current,Measure loaded operation with the actual servo
+Main fuse and switch,1 set,DC-rated and selected for wires and battery,Check ratings and fuse holder fit
+Servo power interlock,1 set,Default-off load switch plus wired hold and kill chain,Current rating and measured switch-off
+Grip vibration motor and driver,1 set,Transistor driver with suitable inductive-load protection,Confirm current and logic polarity
+Passive components and harness,1 set,Connectors pull-downs divider and signal conditioning,Verify ground return and connector pinouts
