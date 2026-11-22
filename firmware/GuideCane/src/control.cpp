@@ -7,7 +7,7 @@ namespace cane {
 namespace {
 
 Point advance(Point p, float angleDeg, float distanceM) {
-    const float angle = radians(angleDeg);
+    const float angle = degreesToRadians(angleDeg);
     return {p.x + std::cos(angle) * distanceM, p.y + std::sin(angle) * distanceM};
 }
 
@@ -54,7 +54,7 @@ void Grid::ray(Point origin, Point hit) {
 Controller::Lane Controller::checkLeg(const Grid& grid, Point start, float headingDeg,
                                       float lengthM) const {
     Lane lane{false, false, lengthM};
-    const float angle = radians(headingDeg);
+    const float angle = degreesToRadians(headingDeg);
     const float forwardX = std::cos(angle);
     const float forwardY = std::sin(angle);
     constexpr float sampleSpacing = Grid::resolution / 2;
@@ -95,7 +95,7 @@ float Controller::chooseTurn(const Grid& grid, float obstacleM) const {
         if (magnitude > config_.steeringLimitDeg) {
             continue;
         }
-        const float length = config_.sideShiftM / std::sin(radians(magnitude));
+        const float length = config_.sideShiftM / std::sin(degreesToRadians(magnitude));
         for (const float angle : {magnitude, -magnitude}) {
             const Point corner = advance({}, angle, length);
             if (corner.x >= obstacleM) {

@@ -6,8 +6,8 @@
 namespace cane {
 
 constexpr float pi = 3.14159265358979323846f;
-constexpr float radians(float degrees) { return degrees * pi / 180.0f; }
-constexpr float degrees(float radiansValue) { return radiansValue * 180.0f / pi; }
+constexpr float degreesToRadians(float degrees) { return degrees * pi / 180.0f; }
+constexpr float radiansToDegrees(float radiansValue) { return radiansValue * 180.0f / pi; }
 
 struct Point {
     float x = 0;

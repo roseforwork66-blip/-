@@ -85,7 +85,7 @@ void projectScan(const Scan& scan, Point origin, float zeroDeg, int direction, G
         if (beam.rangeM < 0.15f || beam.rangeM > 8.0f) {
             continue;
         }
-        const float heading = radians(direction * (beam.angleDeg - zeroDeg));
+        const float heading = degreesToRadians(direction * (beam.angleDeg - zeroDeg));
         grid.ray(origin, {origin.x + std::cos(heading) * beam.rangeM,
                           origin.y + std::sin(heading) * beam.rangeM});
     }
