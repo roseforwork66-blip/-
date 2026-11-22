@@ -63,7 +63,6 @@ jobs:
           git archive --format=zip --output=dist/SmartGuideCane-iOS-v0.1.0.zip "$GITHUB_SHA" ios LICENSE
           xcrun simctl bootstatus "$SIMULATOR_ID" -b
           xcrun simctl install "$SIMULATOR_ID" "$RUNNER_TEMP/GuideCaneDemo/Build/Products/Debug-iphonesimulator/GuideCaneDemo.app"
-          xcrun simctl status_bar "$SIMULATOR_ID" override --time '9:41' --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState unplugged --batteryLevel 100
           xcrun simctl launch --terminate-running-process "$SIMULATOR_ID" com.roseforwork66.smartguidecane.demo
           sleep 2
           xcrun simctl io "$SIMULATOR_ID" screenshot dist/GuideCaneDemo-iPhone.png
