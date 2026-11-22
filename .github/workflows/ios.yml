@@ -1,0 +1,114 @@
+name: iOS demo
+
+on:
+  push:
+    branches: [main]
+    paths: ['ios/**', '.github/workflows/ios.yml']
+  pull_request:
+    paths: ['ios/**', '.github/workflows/ios.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  simulator:
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Select an iPhone simulator
+        id: device
+        run: |
+          xcrun simctl list devices available -j > "$RUNNER_TEMP/ios-devices.json"
+          python3 - "$RUNNER_TEMP/ios-devices.json" >> "$GITHUB_OUTPUT" <<'PY'
+          import json
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as source:
+              runtimes = json.load(source)["devices"]
+          ios_runtimes = [runtime for runtime in runtimes if ".iOS-" in runtime]
+          ios_runtimes.sort(key=lambda runtime: tuple(map(int, runtime.split(".iOS-")[1].split("-"))), reverse=True)
+          for runtime in ios_runtimes:
+              phones = [device for device in runtimes[runtime] if device["isAvailable"] and device["name"].startswith("iPhone")]
+              if phones:
+                  phone = max(phones, key=lambda device: ("Pro Max" in device["name"], "Pro" in device["name"]))
+                  print(f"id={phone['udid']}")
+                  break
+          else:
+              sys.exit("No available iPhone simulator")
+          PY
+      - name: Build and run iOS interface tests
+        env:
+          SIMULATOR_ID: ${{ steps.device.outputs.id }}
+        run: |
+          set -o pipefail
+          xcodebuild test -project ios/GuideCaneDemo.xcodeproj -scheme GuideCaneDemo \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -derivedDataPath "$RUNNER_TEMP/GuideCaneDemo" \
+            -resultBundlePath "$RUNNER_TEMP/GuideCaneDemo.xcresult" \
+            -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO
+      - name: Save test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOS-test-diagnostics
+          path: ${{ runner.temp }}/GuideCaneDemo.xcresult
+      - name: Package source and capture the simulator
+        env:
+          SIMULATOR_ID: ${{ steps.device.outputs.id }}
+        run: |
+          mkdir -p dist
+          git archive --format=zip --output=dist/SmartGuideCane-iOS-v0.1.0.zip "$GITHUB_SHA" ios LICENSE
+          xcrun simctl bootstatus "$SIMULATOR_ID" -b
+          xcrun simctl install "$SIMULATOR_ID" "$RUNNER_TEMP/GuideCaneDemo/Build/Products/Debug-iphonesimulator/GuideCaneDemo.app"
+          xcrun simctl status_bar "$SIMULATOR_ID" override --time '9:41' --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState unplugged --batteryLevel 100
+          xcrun simctl launch --terminate-running-process "$SIMULATOR_ID" com.roseforwork66.smartguidecane.demo
+          sleep 2
+          xcrun simctl io "$SIMULATOR_ID" screenshot dist/GuideCaneDemo-iPhone.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-demo-v0.1.0
+          path: dist/
+          if-no-files-found: error
+
+  release:
+    needs: simulator
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency: ios-v0.1.0-release
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: ios-demo-v0.1.0
+          path: dist/
+      - name: Publish the iOS demo release once
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IOS_TAG: ios-v0.1.0
+        run: |
+          release_state=$(gh release view "$IOS_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2>/dev/null) || release_state=missing
+          if [ "$release_state" = false ]; then
+            echo "Release $IOS_TAG already exists."
+            exit 0
+          fi
+          if [ "$release_state" = true ]; then
+            echo "A draft for $IOS_TAG already exists; verify its assets before publishing." >&2
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$IOS_TAG"; then
+            echo "Tag $IOS_TAG already exists; check its target before publishing." >&2
+            exit 1
+          else
+            status=$?
+            if [ "$status" -ne 2 ]; then exit "$status"; fi
+          fi
+          gh release create "$IOS_TAG" dist/SmartGuideCane-iOS-v0.1.0.zip dist/GuideCaneDemo-iPhone.png \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title '双轮式智能导盲杖 iOS 演示 v0.1.0' \
+            --notes-file ios/RELEASE-v0.1.0.md --prerelease --latest=false
