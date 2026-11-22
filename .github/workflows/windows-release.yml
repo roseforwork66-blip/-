@@ -1,0 +1,81 @@
+name: Windows demo release
+
+on:
+  push:
+    branches: [main]
+    paths: ['windows/**', 'tools/demo*', 'firmware/GuideCane/**', 'CMakeLists.txt', '.github/workflows/windows-release.yml']
+  pull_request:
+    paths: ['windows/**', 'tools/demo*', 'firmware/GuideCane/**', 'CMakeLists.txt', '.github/workflows/windows-release.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build and test the x64 portable executable
+        shell: pwsh
+        run: |
+          cmake -S . -B build -A x64 -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          cmake --build build --config Release
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          ctest --test-dir build -C Release --output-on-failure
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Package the tested executable
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist, package | Out-Null
+          Copy-Item build/Release/SmartGuideCane.exe -Destination dist
+          Copy-Item dist/SmartGuideCane.exe, windows/README.md, LICENSE -Destination package
+          Compress-Archive -Path package/* -DestinationPath dist/SmartGuideCane-Windows-x64-v0.1.0.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smart-guide-cane-windows-x64
+          path: dist/
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency: windows-v0.1.0-release
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: smart-guide-cane-windows-x64
+          path: dist/
+      - name: Publish the Windows demo release once
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WINDOWS_TAG: windows-v0.1.0
+        run: |
+          release_state=$(gh release view "$WINDOWS_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2>/dev/null) || release_state=missing
+          if [ "$release_state" = false ]; then
+            echo "Release $WINDOWS_TAG already exists."
+            exit 0
+          fi
+          if [ "$release_state" = true ]; then
+            echo "A draft for $WINDOWS_TAG already exists; verify its assets before publishing." >&2
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$WINDOWS_TAG"; then
+            echo "Tag $WINDOWS_TAG already exists; check its target before publishing." >&2
+            exit 1
+          else
+            status=$?
+            if [ "$status" -ne 2 ]; then exit "$status"; fi
+          fi
+          gh release create "$WINDOWS_TAG" dist/SmartGuideCane.exe dist/SmartGuideCane-Windows-x64-v0.1.0.zip \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title '双轮式智能导盲杖 Windows 演示 v0.1.0' \
+            --notes-file windows/RELEASE-v0.1.0.md --prerelease --latest=false
