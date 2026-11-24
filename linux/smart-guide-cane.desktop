@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Smart Guide Cane
+Name[zh_CN]=双轮式智能导盲杖
+Comment=Play offline navigation simulation scenarios
+Comment[zh_CN]=回放离线避障仿真场景
+Exec=smart-guide-cane
+Icon=smart-guide-cane
+Terminal=false
+Categories=Education;Science;
