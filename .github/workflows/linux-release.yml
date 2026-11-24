@@ -21,7 +21,7 @@ jobs:
       - name: Install build and desktop test dependencies
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends build-essential ca-certificates cmake desktop-file-utils dpkg-dev fonts-noto-cjk git libgtk-3-dev pkg-config xauth xvfb
+          apt-get install -y --no-install-recommends build-essential ca-certificates cmake desktop-file-utils dpkg-dev file fonts-noto-cjk git libgtk-3-dev pkg-config xauth xvfb
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
